@@ -15,11 +15,7 @@ class HTMLNode ():
         return string
     
     def __repr__(self):
-        print(self)
-        print(f"tag: {self.tag}")
-        print(f"value: {self.value}")
-        print(f"children: {self.children}")
-        print(f"props: {self.props}")
+        return f"HTMLNode(tag={self.tag!r}, value={self.value!r}, children={self.children!r}, props={self.props})"
 
     def __eq__(self, other):
         if (self.tag == other.tag and
