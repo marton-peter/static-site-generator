@@ -15,7 +15,7 @@ class TestParentNode(unittest.TestCase):
         LeafNode(None, "Normal text"),
         ],)
 
-        expected = "ParentNode(tag='p', children=[LeafNode(tag='b', value='Bold text', props=None), LeafNode(tag=None, value='Normal text', props=None), LeafNode(tag='i', value='italic text', props=None), LeafNode(tag=None, value='Normal text', props=None)], props=None)"
+        expected = "ParentNode(tag='p', children=[LeafNode(tag='b', value='Bold text'), LeafNode(tag=None, value='Normal text'), LeafNode(tag='i', value='italic text'), LeafNode(tag=None, value='Normal text')])"
         
         self.assertEqual(repr(node), expected)
 
@@ -54,6 +54,44 @@ class TestParentNode(unittest.TestCase):
         "target": "_blank",
         })
 
-        expected = "ParentNode(tag='p', children=[LeafNode(tag='b', value='Bold text', props=None), LeafNode(tag=None, value='Normal text', props=None), LeafNode(tag='i', value='italic text', props=None), LeafNode(tag=None, value='Normal text', props=None)], props={'href': 'https://www.google.com', 'target': '_blank'})"
+        expected = "ParentNode(tag='p', children=[LeafNode(tag='b', value='Bold text'), LeafNode(tag=None, value='Normal text'), LeafNode(tag='i', value='italic text'), LeafNode(tag=None, value='Normal text')], props={'href': 'https://www.google.com', 'target': '_blank'})"
+        
+        self.assertEqual(repr(node), expected)
+
+    def test_nested(self):
+        node = ParentNode(
+        "p",
+        [
+        LeafNode("b", "Bold text"),
+        LeafNode(None, "Normal text"),
+        ParentNode("p", [LeafNode("b", "Bold text"), LeafNode(None, "Normal text")]),
+        LeafNode("i", "italic text"),
+        LeafNode(None, "Normal text"),
+        ],
+        props={
+        "href": "https://www.google.com",
+        "target": "_blank",
+        })
+
+        expected = "ParentNode(tag='p', children=[LeafNode(tag='b', value='Bold text'), LeafNode(tag=None, value='Normal text'), ParentNode(tag='p', children=[LeafNode(tag='b', value='Bold text'), LeafNode(tag=None, value='Normal text')]), LeafNode(tag='i', value='italic text'), LeafNode(tag=None, value='Normal text')], props={'href': 'https://www.google.com', 'target': '_blank'})"
+
+        self.assertEqual(repr(node), expected)
+
+    def test_nested_props(self):
+        node = ParentNode(
+        "p",
+        [
+        LeafNode("b", "Bold text"),
+        LeafNode(None, "Normal text"),
+        ParentNode("p", [LeafNode("b", "Bold text", props={"href": "https://www.google.com", "target": "_blank"}), LeafNode(None, "Normal text")]),
+        LeafNode("i", "italic text"),
+        LeafNode(None, "Normal text"),
+        ],
+        props={
+        "href": "https://www.google.com",
+        "target": "_blank",
+        })
+
+        expected = "ParentNode(tag='p', children=[LeafNode(tag='b', value='Bold text'), LeafNode(tag=None, value='Normal text'), ParentNode(tag='p', children=[LeafNode(tag='b', value='Bold text', props={'href': 'https://www.google.com', 'target': '_blank'}), LeafNode(tag=None, value='Normal text')]), LeafNode(tag='i', value='italic text'), LeafNode(tag=None, value='Normal text')], props={'href': 'https://www.google.com', 'target': '_blank'})"
         
         self.assertEqual(repr(node), expected)
