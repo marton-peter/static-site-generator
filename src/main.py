@@ -28,41 +28,32 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
         raise ValueError(f"Incorrect text_type {text_type} for delimiter {delimiter}")
 
     # Creates new text nodes based on delimiter locations.
-    for node in old_nodes: # Makes sure normal text nodes are not processed.
-        if node.text_type is not TextType.NORMAL or delimiter not in node.text: # Appends the entire node if no delimiters were found.
+    for node in old_nodes:
+        if not node.text:  # Skip empty nodes
+            continue
+        if node.text_type is not TextType.NORMAL or delimiter not in node.text:
             split_nodes.append(node)
             continue
         else:
-            delimiter_stack = []
-            delimiter_locations = {}
-            last_delimiter_index = 0
             i = 0
-            
             while i < len(node.text): # Looks for delimiters in the old node.
-                if node.text[i:i+len(delimiter)] == delimiter:
-                    if delimiter_stack != [] and delimiter_stack[-1] != delimiter:
-                        raise Exception("Invalid nesting of delimiters")
-                    elif delimiter_stack != [] and delimiter_stack[-1] == delimiter: # Checks if the delimiter has a pair.
-                        delimiter_stack.pop() # Removes the pair of delimiters from the stack.
-                        delimiter_locations["closing"] = i # Marks the index.
-                        # Creates new nodes based on the removed delimiter pair.
-                        if last_delimiter_index == 0: # Checks for a stored value left by the last delimiter pair and uses it to index the first node.
-                            split_nodes.append(TextNode(node.text[:delimiter_locations["opening"]], TextType.NORMAL))
-                        else:
-                            split_nodes.append(TextNode(node.text[last_delimiter_index + len(delimiter):delimiter_locations["opening"]], TextType.NORMAL))
-                        split_nodes.append(TextNode(node.text[delimiter_locations["opening"] + len(delimiter):delimiter_locations["closing"]], text_type))
-                        last_delimiter_index = i # Saves the index for reference to the next pair of delimiters.
-                    else: # Declares opening delimiter, adds it to the stack and marks the index.
-                        delimiter_stack.append(delimiter)
-                        delimiter_locations["opening"] = i
-                    i += len(delimiter) # Makes sure the delimiter is not checked again.
-                else:
-                    i += 1
-
-            if delimiter_stack != []: # Checks for unpaired delimiters.
-                raise Exception("Invalid Markdown syntax")
-            else:
-                split_nodes.append(TextNode(node.text[delimiter_locations["closing"] + len(delimiter):], TextType.NORMAL)) # Saves the closing node.
+                opening_index = node.text.find(delimiter, i) # Marks the opening delimiter.
+                if opening_index == -1:  # No more delimiters
+                    remaining_text = node.text[i:]
+                    if remaining_text:  # only append if there's actual text
+                        split_nodes.append(TextNode(remaining_text, TextType.NORMAL))
+                    break
+                closing_index = node.text.find(delimiter, opening_index + len(delimiter)) # Marks the closing delimiter.
+                if closing_index == -1: # No more delimiters, append remaining text
+                    remaining_text = node.text[i:]
+                    if remaining_text:  # only append if there's actual text
+                        split_nodes.append(TextNode(node.text[i:], TextType.NORMAL))
+                    break
+                text_before = node.text[i:opening_index]
+                if text_before:  # only append if there's actual text
+                    split_nodes.append(TextNode(text_before, TextType.NORMAL))
+                split_nodes.append(TextNode(node.text[opening_index + len(delimiter):closing_index], text_type))
+                i = closing_index + len(delimiter) # Makes sure the delimiter is not checked again.
 
     return split_nodes
 
@@ -108,7 +99,13 @@ def split_nodes_link(old_nodes):
             split_nodes.append(TextNode(remaining_text, TextType.NORMAL)) # Appends the remaining text after the loop completes.
     return split_nodes
 
-
+def text_to_textnodes(text):
+    nodes = split_nodes_link([TextNode(text, TextType.NORMAL)])
+    nodes = split_nodes_image(nodes)
+    nodes = split_nodes_delimiter(nodes, "**", text_type=TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, "*", text_type=TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "`", text_type=TextType.CODE)
+    return nodes
 
 def main():
     Dummy = TextNode("This is a text node", "bold", "https://www.boot.dev")

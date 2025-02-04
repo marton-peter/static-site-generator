@@ -1,5 +1,5 @@
 import unittest
-from main import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links
+from main import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes
 from textnode import TextNode, TextType
 from leafnode import LeafNode
 
@@ -80,10 +80,10 @@ class TestMain(unittest.TestCase):
         self.assertEqual(split_nodes_delimiter(nodes, "`", TextType.CODE), expected)
 
     def test_split_nodes_delimiter_start(self):
-        nodes = [TextNode("`Hello code` World", TextType.NORMAL),
-                 TextNode("Hello `even more code` World", TextType.NORMAL)]
-        expected = [TextNode("", TextType.NORMAL),
-                    TextNode("Hello code", TextType.CODE),
+        nodes = [TextNode("", TextType.NORMAL),
+                TextNode("`Hello code` World", TextType.NORMAL),
+                TextNode("Hello `even more code` World", TextType.NORMAL)]
+        expected = [TextNode("Hello code", TextType.CODE),
                     TextNode(" World", TextType.NORMAL),
                     TextNode("Hello ", TextType.NORMAL),
                     TextNode("even more code", TextType.CODE),
@@ -95,7 +95,6 @@ class TestMain(unittest.TestCase):
                  TextNode("Hello `even more code` World", TextType.NORMAL)]
         expected = [TextNode("Hello ", TextType.NORMAL),
                     TextNode("code World", TextType.CODE),
-                    TextNode("", TextType.NORMAL),
                     TextNode("Hello ", TextType.NORMAL),
                     TextNode("even more code", TextType.CODE),
                     TextNode(" World", TextType.NORMAL)]
@@ -149,4 +148,7 @@ class TestMain(unittest.TestCase):
         text = "![happy cat](https://example.com/my%20cat%20photo.jpg)![image](https://image.jpg)"
         expected = [("happy cat", "https://example.com/my%20cat%20photo.jpg"), ("image", "https://image.jpg")]
         self.assertEqual(extract_markdown_images(text), expected)
+
+
+
     
