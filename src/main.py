@@ -29,30 +29,30 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
 
     # Creates new text nodes based on delimiter locations.
     for node in old_nodes:
-        if not node.text:  # Skip empty nodes
+        if not node.text:  # Skips empty nodes.
             continue
-        if node.text_type is not TextType.NORMAL or delimiter not in node.text:
+        if node.text_type is not TextType.NORMAL or delimiter not in node.text: # Appends nodes with no delimiters.
             split_nodes.append(node)
             continue
         else:
             i = 0
             while i < len(node.text): # Looks for delimiters in the old node.
                 opening_index = node.text.find(delimiter, i) # Marks the opening delimiter.
-                if opening_index == -1:  # No more delimiters
+                if opening_index == -1:  # No more delimiters found.
                     remaining_text = node.text[i:]
-                    if remaining_text:  # only append if there's actual text
+                    if remaining_text:  # Only appends the node if there's actual text.
                         split_nodes.append(TextNode(remaining_text, TextType.NORMAL))
                     break
                 closing_index = node.text.find(delimiter, opening_index + len(delimiter)) # Marks the closing delimiter.
-                if closing_index == -1: # No more delimiters, append remaining text
+                if closing_index == -1: # No more delimiters, appends remaining text.
                     remaining_text = node.text[i:]
-                    if remaining_text:  # only append if there's actual text
-                        split_nodes.append(TextNode(node.text[i:], TextType.NORMAL))
+                    if remaining_text:  # Only appends the node if there's actual text.
+                        split_nodes.append(TextNode(remaining_text, TextType.NORMAL))
                     break
                 text_before = node.text[i:opening_index]
-                if text_before:  # only append if there's actual text
-                    split_nodes.append(TextNode(text_before, TextType.NORMAL))
-                split_nodes.append(TextNode(node.text[opening_index + len(delimiter):closing_index], text_type))
+                if text_before:  # Only appends the node if there's actual text.
+                    split_nodes.append(TextNode(text_before, TextType.NORMAL)) # Appends the text before the opening delimiter.
+                split_nodes.append(TextNode(node.text[opening_index + len(delimiter):closing_index], text_type)) # Appends the text between delimiters.
                 i = closing_index + len(delimiter) # Makes sure the delimiter is not checked again.
 
     return split_nodes
@@ -69,34 +69,38 @@ def split_nodes_image(old_nodes):
     split_nodes =[]
     for node in old_nodes:
         extracted_tuples = extract_markdown_images(node.text)
-        if extracted_tuples == []: # Only processes nodes with images.
+        if extracted_tuples == []or node.text_type != TextType.NORMAL: # Only processes NORMAL nodes with images.
             split_nodes.append(node)
             continue
         else:
             remaining_text = node.text
-            for tuple in extracted_tuples: # Slices the text before the image and appends it as a text node.
-                sections = remaining_text.split(f"![{tuple[0]}]({tuple[1]})", maxsplit=1)
+            for t in extracted_tuples: # Slices the text before the image and appends it as a text node.
+                sections = remaining_text.split(f"![{t[0]}]({t[1]})", maxsplit=1)
                 remaining_text = sections[1] # Updates the remaining text for the next iteration.
-                split_nodes.append(TextNode(sections[0], TextType.NORMAL))
-                split_nodes.append(TextNode(tuple[0], TextType.IMAGE, tuple[1])) # Appends the image and url as a node.
-            split_nodes.append(TextNode(remaining_text, TextType.NORMAL)) # Appends the remaining text after the loop completes.
+                if sections[0] != "": # Only appends the node if there's actual text.
+                    split_nodes.append(TextNode(sections[0], TextType.NORMAL)) # Appends the text before the image and url as a node.
+                split_nodes.append(TextNode(t[0], TextType.IMAGE, t[1])) # Appends the image and url as a node.
+            if remaining_text: # Only appends the node if there's actual text.
+                split_nodes.append(TextNode(remaining_text, TextType.NORMAL)) # Appends the remaining text after the loop completes.
     return split_nodes
 
 def split_nodes_link(old_nodes):
     split_nodes =[]
     for node in old_nodes:
         extracted_tuples = extract_markdown_links(node.text)
-        if extracted_tuples == []: # Only processes nodes with links.
+        if extracted_tuples == [] or node.text_type != TextType.NORMAL: # Only processes NORMAL nodes with links.
             split_nodes.append(node)
             continue
         else:
             remaining_text = node.text
-            for tuple in extracted_tuples: # Slices the text before the link and appends it as a text node.
-                sections = remaining_text.split(f"[{tuple[0]}]({tuple[1]})", maxsplit=1)
+            for t in extracted_tuples: # Slices the text before the link and appends it as a text node.
+                sections = remaining_text.split(f"[{t[0]}]({t[1]})", maxsplit=1)
                 remaining_text = sections[1] # Updates the remaining text for the next iteration.
-                split_nodes.append(TextNode(sections[0], TextType.NORMAL))
-                split_nodes.append(TextNode(tuple[0], TextType.LINK, tuple[1])) # Appends the link as a node.
-            split_nodes.append(TextNode(remaining_text, TextType.NORMAL)) # Appends the remaining text after the loop completes.
+                if sections[0] != "": # Only appends the node if there's actual text.
+                    split_nodes.append(TextNode(sections[0], TextType.NORMAL)) # Appends the text before the link as a node.
+                split_nodes.append(TextNode(t[0], TextType.LINK, t[1])) # Appends the link as a node.
+            if remaining_text: # Only appends the node if there's actual text.
+                split_nodes.append(TextNode(remaining_text, TextType.NORMAL)) # Appends the remaining text after the loop completes.
     return split_nodes
 
 def text_to_textnodes(text):
