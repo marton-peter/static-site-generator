@@ -43,7 +43,7 @@ class TestMain(unittest.TestCase):
     def test_split_nodes_delimiter_no_delimiters(self):
         node = TextNode("Hello World", TextType.NORMAL)
         expected = [TextNode("Hello World", TextType.NORMAL)]
-        self.assertEqual(split_nodes_delimiter([node], "**", TextType.BOLD), expected)
+        self.assertEqual(split_nodes_delimiter([node]), expected)
 
     def test_split_nodes_delimiter_bold(self):
         nodes = [TextNode("Hello **bold** World", TextType.NORMAL),
@@ -54,7 +54,7 @@ class TestMain(unittest.TestCase):
                     TextNode("Hello ", TextType.NORMAL),
                     TextNode("even bolder", TextType.BOLD),
                     TextNode(" World", TextType.NORMAL)]
-        self.assertEqual(split_nodes_delimiter(nodes, "**", TextType.BOLD), expected)
+        self.assertEqual(split_nodes_delimiter(nodes), expected)
 
     def test_split_nodes_delimiter_italic(self):
         nodes = [TextNode("Hello *italic* World", TextType.NORMAL),
@@ -65,8 +65,7 @@ class TestMain(unittest.TestCase):
                     TextNode("Hello ", TextType.NORMAL),
                     TextNode("even more italic", TextType.ITALIC),
                     TextNode(" World", TextType.NORMAL)]
-        
-        self.assertEqual(split_nodes_delimiter(nodes, "*", TextType.ITALIC), expected)
+        self.assertEqual(split_nodes_delimiter(nodes), expected)
 
     def test_split_nodes_delimiter_code(self):
         nodes = [TextNode("Hello `code` World", TextType.NORMAL),
@@ -77,18 +76,17 @@ class TestMain(unittest.TestCase):
                     TextNode("Hello ", TextType.NORMAL),
                     TextNode("even more code", TextType.CODE),
                     TextNode(" World", TextType.NORMAL)]
-        self.assertEqual(split_nodes_delimiter(nodes, "`", TextType.CODE), expected)
+        self.assertEqual(split_nodes_delimiter(nodes), expected)
 
     def test_split_nodes_delimiter_start(self):
-        nodes = [TextNode("", TextType.NORMAL),
-                TextNode("`Hello code` World", TextType.NORMAL),
+        nodes = [TextNode("`Hello code` World", TextType.NORMAL),
                 TextNode("Hello `even more code` World", TextType.NORMAL)]
         expected = [TextNode("Hello code", TextType.CODE),
                     TextNode(" World", TextType.NORMAL),
                     TextNode("Hello ", TextType.NORMAL),
                     TextNode("even more code", TextType.CODE),
                     TextNode(" World", TextType.NORMAL)]
-        self.assertEqual(split_nodes_delimiter(nodes, "`", TextType.CODE), expected)
+        self.assertEqual(split_nodes_delimiter(nodes), expected)
 
     def test_split_nodes_delimiter_end(self):
         nodes = [TextNode("Hello `code World`", TextType.NORMAL),
@@ -98,7 +96,7 @@ class TestMain(unittest.TestCase):
                     TextNode("Hello ", TextType.NORMAL),
                     TextNode("even more code", TextType.CODE),
                     TextNode(" World", TextType.NORMAL)]
-        self.assertEqual(split_nodes_delimiter(nodes, "`", TextType.CODE), expected)
+        self.assertEqual(split_nodes_delimiter(nodes), expected)
 
     def test_split_nodes_delimiter_consequent(self):
         nodes = [TextNode("Hello `code` World", TextType.NORMAL),
@@ -108,11 +106,12 @@ class TestMain(unittest.TestCase):
                     TextNode(" World", TextType.NORMAL),
                     TextNode("Hello ", TextType.NORMAL),
                     TextNode("even", TextType.CODE),
-                    TextNode("", TextType.NORMAL),
-                    TextNode(" more", TextType.CODE),
-                    TextNode("", TextType.NORMAL),
-                    TextNode(" code", TextType.CODE),
+                    TextNode(" ", TextType.NORMAL),
+                    TextNode("more", TextType.CODE),
+                    TextNode(" ", TextType.NORMAL),
+                    TextNode("code", TextType.CODE),
                     TextNode(" World", TextType.NORMAL)]
+        self.assertEqual(split_nodes_delimiter(nodes), expected)
         
     def test_extract_markdown_images_after_link(self):
         text = "[link](https://boot.dev)![image](https://image.jpg)"
@@ -225,17 +224,29 @@ class TestMain(unittest.TestCase):
         self.assertEqual(text_to_textnodes(text), expected)
 
     def test_text_to_textnodes_nested_bold(self):
-        text = "This *is **text** with an italic* word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        text = "*text **bold** more text*"
         expected = [
-            TextNode("This ", TextType.NORMAL),
-            TextNode("is ", TextType.ITALIC),
-            TextNode("text", TextType.BOLD),
-            TextNode(" with an italic", TextType.ITALIC),
-            TextNode(" word and a ", TextType.NORMAL),
-            TextNode("code block", TextType.CODE),
-            TextNode(" and an ", TextType.NORMAL),
-            TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
-            TextNode(" and a ", TextType.NORMAL),
-            TextNode("link", TextType.LINK, "https://boot.dev"),
+            TextNode("text ", TextType.ITALIC),
+            TextNode("bold", TextType.BOLD),
+            TextNode(" more text", TextType.ITALIC),
+        ]
+        self.assertEqual(text_to_textnodes(text), expected)
+
+    def test_text_to_textnodes_nested_italic(self):
+        text = "**bold *italic* text**"
+        expected = [
+            TextNode("bold ", TextType.BOLD),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" text", TextType.BOLD),
+        ]
+        self.assertEqual(text_to_textnodes(text), expected)
+
+    def test_text_to_textnodes_nested_bold_2(self):
+        text = "This is *italic **and bold** italic*"
+        expected = [
+            TextNode("This is ", TextType.NORMAL),
+            TextNode("italic ", TextType.ITALIC),
+            TextNode("and bold", TextType.BOLD),
+            TextNode(" italic", TextType.ITALIC),
         ]
         self.assertEqual(text_to_textnodes(text), expected)
