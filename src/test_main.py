@@ -1,5 +1,13 @@
 import unittest
-from main import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes
+from main import text_node_to_html_node, \
+    split_nodes_delimiter, \
+    extract_markdown_images, \
+    extract_markdown_links, \
+    split_nodes_image, \
+    split_nodes_link, \
+    text_to_textnodes, \
+    markdown_to_blocks, \
+    block_to_block_type
 from textnode import TextNode, TextType
 from leafnode import LeafNode
 
@@ -250,3 +258,43 @@ class TestMain(unittest.TestCase):
             TextNode(" italic", TextType.ITALIC),
         ]
         self.assertEqual(text_to_textnodes(text), expected)
+
+    def test_markdown_to_blocks(self):
+        text = "\n\n# Heading\n\nText\n\n* Item\n\n"
+        expected = ["# Heading", "Text", "* Item"]
+        self.assertEqual(markdown_to_blocks(text), expected)
+
+    def test_block_to_block_type_empty_lines(self):
+        text = "1. First\n\n2. Second\n\n3. Third"
+        expected = "ordered_list"
+        self.assertEqual(block_to_block_type(text), expected)
+
+    def test_block_to_block_type_wrong_order(self):
+        text = "1. First\n2. Second\n4. Fourth"
+        expected = "paragraph"
+        self.assertEqual(block_to_block_type(text), expected)
+
+    def test_block_to_block_type_mixed_markers(self):
+        text = "* First\n- Second\n* Third"
+        expected = "paragraph"
+        self.assertEqual(block_to_block_type(text), expected)
+
+    def test_block_to_block_type_mixed_quotes(self):
+        text = ">mixed\n> spacing\n>is fine"
+        expected = "quote"
+        self.assertEqual(block_to_block_type(text), expected)
+
+    def test_block_to_block_type_nospace_heading(self):
+        text = "#NoSpace"
+        expected = "paragraph"
+        self.assertEqual(block_to_block_type(text), expected)
+
+    def test_block_to_block_type_code(self):
+        text = "```\nsome code\n```"
+        expected = "code"
+        self.assertEqual(block_to_block_type(text), expected)
+
+    def test_block_to_block_type_7_heading(self):
+        text = "####### Too many"
+        expected = "paragraph"
+        self.assertEqual(block_to_block_type(text), expected)

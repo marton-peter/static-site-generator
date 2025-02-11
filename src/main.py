@@ -59,9 +59,7 @@ def split_nodes_delimiter(old_nodes):
                         closing_index = ending_index
                         starting_index = opening_index
                         pairs_found = True
-                if not pairs_found:
-                    break
-                elif opening_delimiter is None:
+                if not pairs_found or opening_delimiter is None:
                     break
                 else:
                     text_before = node.text[i:starting_index]
@@ -127,6 +125,71 @@ def text_to_textnodes(text):
     nodes = split_nodes_link([TextNode(text, TextType.NORMAL)])
     nodes = split_nodes_image(nodes)
     return split_nodes_delimiter(nodes)
+
+def markdown_to_blocks(markdown):
+    split_blocks = []
+    stripped = markdown.strip()
+    splitting_index = stripped.find("\n\n") # Marks the index of the first double newline found.
+    if splitting_index != -1:
+        split_blocks.append(stripped[:splitting_index].strip()) # Appends the stripped block. 
+        split_blocks.extend(markdown_to_blocks(stripped[splitting_index + 2:])) # Recursively processes the remaining text.
+    else:
+        if markdown.strip(): # Appends any trailing text.
+            split_blocks.append(stripped.strip())
+    return split_blocks
+
+def block_to_block_type(markdown_block):
+    if markdown_block[:3] == "```" and markdown_block[-3:] == "```": # Code blocks: Checks for triple backticks at start and end.
+        return "code"
+    if markdown_block[0] == '#': # Headings: Checks for 1-6 #'s followed by space.
+        count = 0
+        for char in markdown_block[:6]:
+            if char == '#':
+                count += 1
+            else:
+                break
+        if 0 < count <= 6 and markdown_block[count] == ' ':
+            return "heading"
+        else:
+            return "paragraph"
+    if markdown_block[0] == ">": # Quotes: All non-empty lines must start with ">".
+        passed = True
+        for line in markdown_block.split("\n"):
+            if line == "":
+                continue
+            if line[0] != ">":
+                passed = False
+        if passed:
+            return "quote"
+        else:
+            return "paragraph"
+    if markdown_block[:2] == "* " or markdown_block[:2] == "- ": # Unordered lists: All non-empty lines must start with either "* " or "- ".
+        marker = markdown_block[0]
+        passed = True
+        for line in markdown_block.split("\n"):
+            if line == "":
+                continue
+            if line[:2] != f"{marker} ":
+                passed = False
+        if passed:
+            return "unordered_list"
+        else:
+            return "paragraph"
+    if markdown_block[:3] == "1. ": # Ordered lists: Must start with "1. " and each subsequent non-empty line must increment.
+        passed = True
+        count = 1
+        for line in markdown_block.split("\n"):
+            if line == "":
+                continue
+            if line[:len(str(count)) + 2] != f"{count}. ":
+                passed = False
+            count += 1
+        if passed:
+            return "ordered_list"
+        else:
+            return "paragraph"
+    else: # Paragraphs: Anything that doesn’t match the above.
+        return "paragraph"
 
 def main():
     Dummy = TextNode("This is a text node", "bold", "https://www.boot.dev")
