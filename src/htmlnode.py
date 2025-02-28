@@ -2,11 +2,34 @@ class HTMLNode ():
     def __init__(self, tag=None, value=None, children=None, props=None):
         self.tag = tag
         self.value = value
-        self.children = children
+        self.children = children or []
         self.props = props
 
     def to_html(self):
-        raise NotImplementedError
+        if self.tag is None:
+            # If no tag, just render children concatenated together
+            return "".join(child.to_html() for child in self.children) if self.children else ""
+    
+        # Start with opening tag
+        html = f"<{self.tag}"
+        
+        # Add any props/attributes if they exist
+        if self.props:
+            for key, value in self.props.items():
+                html += f' {key}="{value}"'
+        
+        # Close opening tag
+        html += ">"
+        
+        # Add children's HTML if they exist
+        if self.children:
+            for child in self.children:
+                html += child.to_html()
+        
+        # Add closing tag
+        html += f"</{self.tag}>"
+        
+        return html
     
     def props_to_html(self):
         string = ""

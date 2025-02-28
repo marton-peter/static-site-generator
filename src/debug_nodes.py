@@ -379,12 +379,16 @@ def markdown_to_html_node(markdown):
             items.append('\n'.join(current_item))
         return items
 
+    print("Input markdown:", repr(markdown))
     blocks = markdown_to_blocks(markdown)
+    print("Blocks:", [repr(b) for b in blocks])
     div = HTMLNode("div", None) # Creates the main container node.
     nodes = []
 
     for block in blocks:
         if block_to_block_type(block) == "code": # Wraps blocks in nested nodes and removes the first and last lines.
+            print("\nDebug Code Block:")
+            print("Original block:", repr(block))
             outer_node = HTMLNode('pre', None)
             lines = block.split("\n")
             if len(lines) < 3:  # Needs at least opening, content, and closing lines.
@@ -397,6 +401,7 @@ def markdown_to_html_node(markdown):
             inner_node.children = [LeafNode(None, "\n".join(lines))]
             outer_node.children = [inner_node]
             nodes.append(outer_node)
+            print("Generated HTML:", outer_node.to_html())
 
         elif block_to_block_type(block) == "heading": # Wraps heading blocks in the right node type and processes the text further.
             count = len(block) - len(block.lstrip('#'))
@@ -414,19 +419,26 @@ def markdown_to_html_node(markdown):
                 nodes.append(paragraph_outer_node)
 
         elif block_to_block_type(block) == "quote": # Wraps quote blocks in a parent node, strips '>' from the beginning of lines and processes the text further.
+            print("\nDebug Blockquote:")
+            print("Original block:", repr(block))
             outer_node = HTMLNode('blockquote', None)
             paragraph_node = HTMLNode(f'p', None)
             lines = block.split("\n")
             stripped_lines = [line.lstrip('>').strip() for line in lines]
+            print("Stripped lines:", stripped_lines)
             text_nodes = text_to_textnodes(" ".join(stripped_lines))
+            print("Raw text to text nodes:", repr(text_nodes))
             inner_nodes = [text_node_to_html_node(node) for node in text_nodes]
+            print("HTML nodes returned by `text_node_to_html_node`:", inner_nodes)
             outer_node.children = [paragraph_node]
             paragraph_node.children = inner_nodes
+            print("Final blockquote HTML:", outer_node.to_html())
             nodes.append(outer_node)
 
         elif block_to_block_type(block) == "unordered_list": # Wraps unordered lists in a parent node, strips '* ' or '- ' from the beginning of lines and wraps them in 'li' nodes before processing them furter.
             outer_node = HTMLNode('ul', None)
             items = process_list_items(block, ordered=False)
+            print("Items:", items)
             li_nodes = []
             for item in items:
                 li_node = HTMLNode('li', None)
@@ -440,6 +452,7 @@ def markdown_to_html_node(markdown):
         elif block_to_block_type(block) == "ordered_list": # Wraps ordered lists in a parent node, strips numbers and periods from the beginning of lines and wraps them in 'li' nodes before processing them furter.
             outer_node = HTMLNode('ol', None)
             items = process_list_items(block, ordered=True)
+            print("Items:", items)
             li_nodes = []
             for item in items:
                 li_node = HTMLNode('li', None)
@@ -461,13 +474,40 @@ def markdown_to_html_node(markdown):
             raise ValueError("Invalid markdown format")
 
     div.children = nodes
+    print("\nFinal Structure:")
+    for idx, node in enumerate(nodes):
+        print(f"Node {idx}: {node.to_html()[:60]}...")
+    print(f"Number of nodes created: {len(nodes)}")
     return div
 
+# Test case
+markdown = """# Main Title
 
+This is a *paragraph* with **bold** and *italic* text.
 
-def main():
-    Dummy = TextNode("This is a text node", "bold", "https://www.boot.dev")
-    print(Dummy)
+## Secondary Heading
 
-if __name__ == "__main__":
-    main()
+Here's a list:
+* First item with **bold**
+* Second item with *italic*
+* Third item with `code`
+
+Here's a numbered list:
+1. First numbered with *emphasis*
+2. Second numbered with **strong**
+3. Third numbered with `code`
+
+> This is a blockquote
+> With multiple lines
+> And some **bold** text
+
+```python
+def hello_world():
+    print("Hello!")
+```
+        
+### Final Heading
+Last paragraph with ***bold italic*** text."""
+
+nodes = markdown_to_html_node(markdown)
+print("Generated Nodes:", nodes)

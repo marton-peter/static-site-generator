@@ -7,24 +7,26 @@ from main import text_node_to_html_node, \
     split_nodes_link, \
     text_to_textnodes, \
     markdown_to_blocks, \
-    block_to_block_type
+    block_to_block_type, \
+    markdown_to_html_node
 from textnode import TextNode, TextType
 from leafnode import LeafNode
+from htmlnode import HTMLNode
 
 class TestMain(unittest.TestCase):
     def test_text_node_to_html_node_normal(self):
         node = TextNode("Hello World", TextType.NORMAL)
-        expected = LeafNode("", "Hello World")
+        expected = LeafNode(None, "Hello World")
         self.assertEqual(text_node_to_html_node(node), expected)
 
     def test_text_node_to_html_node_bold(self):
         node = TextNode("Hello World", TextType.BOLD)
-        expected = LeafNode("b", "Hello World")
+        expected = LeafNode("strong", "Hello World")
         self.assertEqual(text_node_to_html_node(node), expected)
 
     def test_text_node_to_html_node_italic(self):
         node = TextNode("Hello World", TextType.ITALIC)
-        expected = LeafNode("i", "Hello World")
+        expected = LeafNode("em", "Hello World")
         self.assertEqual(text_node_to_html_node(node), expected)
 
     def test_text_node_to_html_node_code(self):
@@ -264,6 +266,21 @@ class TestMain(unittest.TestCase):
         expected = ["# Heading", "Text", "* Item"]
         self.assertEqual(markdown_to_blocks(text), expected)
 
+    def test_markdown_to_blocks_code(self):
+        text = "```python\ndef hello():\n    return \"world\"\n```\n\nNext paragraph\n\n```ruby\nputs \"another block\"\n```"
+        expected = ["```python\ndef hello():\n    return \"world\"\n```", "Next paragraph", "```ruby\nputs \"another block\"\n```"]
+        self.assertEqual(markdown_to_blocks(text), expected)
+
+    def test_markdown_to_blocks_quotes(self):
+        text = "> First line\n> Second line\n\n> Another quote"
+        expected = ["> First line\n> Second line", "> Another quote"]
+        self.assertEqual(markdown_to_blocks(text), expected)
+
+    def test_markdown_to_blocks_unordered_list(self):
+        text = "* First item\n\n* Second item\n\n\n* New list"
+        expected = ["* First item\n\n* Second item", "* New list"]
+        self.assertEqual(markdown_to_blocks(text), expected)
+
     def test_block_to_block_type_empty_lines(self):
         text = "1. First\n\n2. Second\n\n3. Third"
         expected = "ordered_list"
@@ -298,3 +315,259 @@ class TestMain(unittest.TestCase):
         text = "####### Too many"
         expected = "paragraph"
         self.assertEqual(block_to_block_type(text), expected)
+
+    def markdown_to_html_node(self):
+        markdown = """# Heading
+This is a paragraph."""
+        expected = HTMLNode("div", None)
+
+        h1 = HTMLNode("h1", None)
+        h1.children = [LeafNode(None, "Heading")]
+
+        p1 = HTMLNode("p", None)
+        p1.children = [LeafNode(None, "This is a paragraph."),]
+        expected.children = [h1, p1]
+        assert markdown_to_html_node(markdown).to_html() == expected.to_html()
+
+    def test_mixed_formatting(self):
+        markdown = """# Main Title
+This is a paragraph with **bold** and *italic* text.
+
+> This is a blockquote
+> with multiple lines
+
+* List item 1
+* List item 2"""
+        expected = HTMLNode("div", None)
+
+        h1 = HTMLNode("h1", None)
+        h1.children = [LeafNode(None, "Main Title")]
+
+        p1 = HTMLNode("p", None)
+        p1.children = [
+            LeafNode(None, "This is a paragraph with "),
+            LeafNode("strong", "bold"),
+            LeafNode(None, " and "),
+            LeafNode("em", "italic"),
+            LeafNode(None, " text.")
+            ]
+        
+        blockquote = HTMLNode("blockquote", None)
+        blockquote.children = [HTMLNode("p", None, children=[LeafNode(None, "This is a blockquote with multiple lines")])]
+
+        ul = HTMLNode("ul", None)
+        li1 = HTMLNode("li", None)
+        li1.children = [LeafNode(None, "List item 1")]
+
+        li2 = HTMLNode("li", None)
+        li2.children = [LeafNode(None, "List item 2")]
+        ul.children = [li1, li2]
+
+        expected.children = [h1, p1, blockquote, ul]
+        assert markdown_to_html_node(markdown).to_html() == expected.to_html()
+
+    def test_ordered_list(self):
+        markdown = """Here's a numbered list:
+1. First numbered with *emphasis*
+2. Second numbered with **strong**
+3. Third numbered with `code`"""
+
+        expected = HTMLNode("div", None)
+
+        # Paragraph above the list
+        p = HTMLNode("p", None)
+        p.children = [LeafNode(None, "Here's a numbered list:")]
+
+        # Ordered list
+        ol = HTMLNode("ol", None)
+
+        li1 = HTMLNode("li", None)
+        li1.children = [
+            LeafNode(None, "First numbered with "),
+            LeafNode("em", "emphasis")
+        ]
+
+        li2 = HTMLNode("li", None)
+        li2.children = [
+            LeafNode(None, "Second numbered with "),
+            LeafNode("strong", "strong")
+        ]
+
+        li3 = HTMLNode("li", None)
+        li3.children = [
+            LeafNode(None, "Third numbered with "),
+            LeafNode("code", "code")
+        ]
+
+        # Add list items to the ordered list
+        ol.children = [li1, li2, li3]
+
+        # Add paragraph and ordered list to the expected structure
+        expected.children = [p, ol]
+
+        # Run the test
+        assert markdown_to_html_node(markdown).to_html() == expected.to_html()
+
+
+    def test_complex_markdown(self):
+        markdown = """# Main Title
+
+This is a *paragraph* with **bold** and *italic* text.
+
+## Secondary Heading
+
+Here's a list:
+* First item with **bold**
+* Second item with *italic*
+* Third item with `code`
+
+Here's a numbered list:
+1. First numbered with *emphasis*
+2. Second numbered with **strong**
+3. Third numbered with `code`
+
+> This is a blockquote
+> With multiple lines
+> And some **bold** text
+
+```python
+def hello_world():
+    print("Hello!")
+```
+        
+### Final Heading
+Last paragraph with **bold italic** text."""
+    
+        expected = HTMLNode("div", None)
+
+        h1 = HTMLNode("h1", None)
+        h1.children = [LeafNode(None, "Main Title")]
+
+        p1 = HTMLNode("p", None)
+        p1.children = [
+        LeafNode(None, "This is a "),
+        LeafNode("em", "paragraph"),
+        LeafNode(None, " with "),
+        LeafNode("strong", "bold"),
+        LeafNode(None, " and "),
+        LeafNode("em", "italic"),
+        LeafNode(None, " text.")
+        ]
+
+        h2 = HTMLNode("h2", None)
+        h2.children = [LeafNode(None, "Secondary Heading")]
+
+        p2 = HTMLNode("p", None)
+        p2.children = [LeafNode(None, "Here's a list:")]
+
+        ul = HTMLNode("ul", None)
+        li1 = HTMLNode("li", None)
+        li1.children = [
+            LeafNode(None, "First item with "),
+            LeafNode("strong", "bold")
+        ]
+
+        li2 = HTMLNode("li", None)
+        li2.children = [
+            LeafNode(None, "Second item with "),
+            LeafNode("em", "italic")
+        ]
+
+        li3 = HTMLNode("li", None)
+        li3.children = [
+            LeafNode(None, "Third item with "),
+            LeafNode("code", "code")
+        ]
+
+        ul.children = [li1, li2, li3]
+
+        p3 = HTMLNode("p", None)
+        p3.children = [LeafNode(None, "Here's a numbered list:")]
+
+        ol = HTMLNode("ol", None)
+        li1 = HTMLNode("li", None)
+        li1.children = [
+            LeafNode(None, "First numbered with "),
+            LeafNode("em", "emphasis")
+        ]
+
+        li2 = HTMLNode("li", None)
+        li2.children = [
+            LeafNode(None, "Second numbered with "),
+            LeafNode("strong", "strong")
+        ]
+
+        li3 = HTMLNode("li", None)
+        li3.children = [
+            LeafNode(None, "Third numbered with "),
+            LeafNode("code", "code")
+        ]
+
+        ol.children = [li1, li2, li3]
+
+        blockquote = HTMLNode("blockquote", None)
+        blockquote.children = [HTMLNode("p", None, children=[
+        LeafNode(None, "This is a blockquote With multiple lines And some "),
+        LeafNode("strong", "bold"),
+        LeafNode(None, " text")
+        ])]
+
+        pre = HTMLNode("pre", None)
+        code = HTMLNode("code", None)
+        code.children = [
+            LeafNode(None, "def hello_world():\n    print(\"Hello!\")")
+        ]
+        pre.children = [code]
+
+        h3 = HTMLNode("h3", None)
+        h3.children = [
+            LeafNode(None, "Final Heading")
+        ]
+
+        p4 = HTMLNode("p", None)
+        p4.children = [
+            LeafNode(None, "Last paragraph with "),
+            LeafNode("strong", "bold italic"),
+            LeafNode(None, " text.")
+        ]
+
+        expected.children = [h1, p1, h2, p2, ul, p3, ol, blockquote, pre, h3, p4]
+        assert markdown_to_html_node(markdown).to_html() == expected.to_html()
+
+    def test_markdown_to_html_node(self):
+        # Test case 1: Simple code block
+        markdown1 = "```\nprint('hello')\n```"
+        
+        # Test case 2: Code block with language specification
+        markdown2 = "```python\ndef example():\n    print('hello')\n```"
+        
+        # Test case 3: Code block with empty lines
+        markdown3 = "```python\ndef example():\n\n    print('hello')\n\n```"
+        
+        # Test case 4: Code block with trailing spaces
+        markdown4 = "```python\nprint('hello')    \nprint('world')  \n```"
+        
+        # Test case 5: Invalid code block (no content)
+        markdown5 = "```\n```"
+        
+        # Test case 6: Code block with indentation
+        markdown6 = """```python
+    def example():
+        if True:
+            print('indented')
+        return None
+    ```"""
+
+        # Run tests
+        try:
+            node1 = markdown_to_html_node(markdown1)
+            node2 = markdown_to_html_node(markdown2)
+            node3 = markdown_to_html_node(markdown3)
+            node4 = markdown_to_html_node(markdown4)
+            node6 = markdown_to_html_node(markdown6)
+            
+            # This should raise ValueError
+            node5 = markdown_to_html_node(markdown5)
+            print("Test 5 failed: Should have raised ValueError")
+        except ValueError:
+            print("Test 5 passed: Correctly raised ValueError for empty code block")

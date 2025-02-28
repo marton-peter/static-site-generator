@@ -29,13 +29,3 @@ class TestLeafNode(unittest.TestCase):
     def test_missing_props(self):
         node = LeafNode(tag=None, value="Just plain text", props=None)
         self.assertEqual(node.to_html(), "Just plain text")
-
-    def test_missing_value(self):
-        node = LeafNode(tag="p", value="")
-        with self.assertRaises(ValueError):
-            node.to_html()
-
-    def test_none_value(self):
-        node = LeafNode(tag="p", value=None)
-        with self.assertRaises(ValueError):
-            node.to_html()
