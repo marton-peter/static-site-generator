@@ -10,6 +10,7 @@ from main import text_node_to_html_node, \
     block_to_block_type, \
     markdown_to_html_node
 from textnode import TextNode, TextType
+from parentnode import ParentNode
 from leafnode import LeafNode
 from htmlnode import HTMLNode
 
@@ -319,12 +320,12 @@ class TestMain(unittest.TestCase):
     def markdown_to_html_node(self):
         markdown = """# Heading
 This is a paragraph."""
-        expected = HTMLNode("div", None)
+        expected = ParentNode("div", None)
 
-        h1 = HTMLNode("h1", None)
+        h1 = ParentNode("h1", None)
         h1.children = [LeafNode(None, "Heading")]
 
-        p1 = HTMLNode("p", None)
+        p1 = ParentNode("p", None)
         p1.children = [LeafNode(None, "This is a paragraph."),]
         expected.children = [h1, p1]
         assert markdown_to_html_node(markdown).to_html() == expected.to_html()
@@ -338,12 +339,12 @@ This is a paragraph with **bold** and *italic* text.
 
 * List item 1
 * List item 2"""
-        expected = HTMLNode("div", None)
+        expected = ParentNode("div", None)
 
-        h1 = HTMLNode("h1", None)
+        h1 = ParentNode("h1", None)
         h1.children = [LeafNode(None, "Main Title")]
 
-        p1 = HTMLNode("p", None)
+        p1 = ParentNode("p", None)
         p1.children = [
             LeafNode(None, "This is a paragraph with "),
             LeafNode("strong", "bold"),
@@ -352,14 +353,15 @@ This is a paragraph with **bold** and *italic* text.
             LeafNode(None, " text.")
             ]
         
-        blockquote = HTMLNode("blockquote", None)
-        blockquote.children = [HTMLNode("p", None, children=[LeafNode(None, "This is a blockquote with multiple lines")])]
-
-        ul = HTMLNode("ul", None)
-        li1 = HTMLNode("li", None)
+        blockquote = ParentNode("blockquote", None)
+        p_in_blockquote = ParentNode("p", None)
+        p_in_blockquote.children = [LeafNode(None, "This is a blockquote with multiple lines")]
+        blockquote.children = [p_in_blockquote]
+        ul = ParentNode("ul", None)
+        li1 = ParentNode("li", None)
         li1.children = [LeafNode(None, "List item 1")]
 
-        li2 = HTMLNode("li", None)
+        li2 = ParentNode("li", None)
         li2.children = [LeafNode(None, "List item 2")]
         ul.children = [li1, li2]
 
@@ -372,28 +374,28 @@ This is a paragraph with **bold** and *italic* text.
 2. Second numbered with **strong**
 3. Third numbered with `code`"""
 
-        expected = HTMLNode("div", None)
+        expected = ParentNode("div", None)
 
         # Paragraph above the list
-        p = HTMLNode("p", None)
+        p = ParentNode("p", None)
         p.children = [LeafNode(None, "Here's a numbered list:")]
 
         # Ordered list
-        ol = HTMLNode("ol", None)
+        ol = ParentNode("ol", None)
 
-        li1 = HTMLNode("li", None)
+        li1 = ParentNode("li", None)
         li1.children = [
             LeafNode(None, "First numbered with "),
             LeafNode("em", "emphasis")
         ]
 
-        li2 = HTMLNode("li", None)
+        li2 = ParentNode("li", None)
         li2.children = [
             LeafNode(None, "Second numbered with "),
             LeafNode("strong", "strong")
         ]
 
-        li3 = HTMLNode("li", None)
+        li3 = ParentNode("li", None)
         li3.children = [
             LeafNode(None, "Third numbered with "),
             LeafNode("code", "code")
@@ -438,12 +440,12 @@ def hello_world():
 ### Final Heading
 Last paragraph with **bold italic** text."""
     
-        expected = HTMLNode("div", None)
+        expected = ParentNode("div", None)
 
-        h1 = HTMLNode("h1", None)
+        h1 = ParentNode("h1", None)
         h1.children = [LeafNode(None, "Main Title")]
 
-        p1 = HTMLNode("p", None)
+        p1 = ParentNode("p", None)
         p1.children = [
         LeafNode(None, "This is a "),
         LeafNode("em", "paragraph"),
@@ -454,26 +456,26 @@ Last paragraph with **bold italic** text."""
         LeafNode(None, " text.")
         ]
 
-        h2 = HTMLNode("h2", None)
+        h2 = ParentNode("h2", None)
         h2.children = [LeafNode(None, "Secondary Heading")]
 
-        p2 = HTMLNode("p", None)
+        p2 = ParentNode("p", None)
         p2.children = [LeafNode(None, "Here's a list:")]
 
-        ul = HTMLNode("ul", None)
-        li1 = HTMLNode("li", None)
+        ul = ParentNode("ul", None)
+        li1 = ParentNode("li", None)
         li1.children = [
             LeafNode(None, "First item with "),
             LeafNode("strong", "bold")
         ]
 
-        li2 = HTMLNode("li", None)
+        li2 = ParentNode("li", None)
         li2.children = [
             LeafNode(None, "Second item with "),
             LeafNode("em", "italic")
         ]
 
-        li3 = HTMLNode("li", None)
+        li3 = ParentNode("li", None)
         li3.children = [
             LeafNode(None, "Third item with "),
             LeafNode("code", "code")
@@ -481,23 +483,23 @@ Last paragraph with **bold italic** text."""
 
         ul.children = [li1, li2, li3]
 
-        p3 = HTMLNode("p", None)
+        p3 = ParentNode("p", None)
         p3.children = [LeafNode(None, "Here's a numbered list:")]
 
-        ol = HTMLNode("ol", None)
-        li1 = HTMLNode("li", None)
+        ol = ParentNode("ol", None)
+        li1 = ParentNode("li", None)
         li1.children = [
             LeafNode(None, "First numbered with "),
             LeafNode("em", "emphasis")
         ]
 
-        li2 = HTMLNode("li", None)
+        li2 = ParentNode("li", None)
         li2.children = [
             LeafNode(None, "Second numbered with "),
             LeafNode("strong", "strong")
         ]
 
-        li3 = HTMLNode("li", None)
+        li3 = ParentNode("li", None)
         li3.children = [
             LeafNode(None, "Third numbered with "),
             LeafNode("code", "code")
@@ -505,26 +507,28 @@ Last paragraph with **bold italic** text."""
 
         ol.children = [li1, li2, li3]
 
-        blockquote = HTMLNode("blockquote", None)
-        blockquote.children = [HTMLNode("p", None, children=[
-        LeafNode(None, "This is a blockquote With multiple lines And some "),
-        LeafNode("strong", "bold"),
-        LeafNode(None, " text")
-        ])]
+        blockquote = ParentNode("blockquote", None)
+        p_in_blockquote = ParentNode("p", None)
+        p_in_blockquote.children = [
+            LeafNode(None, "This is a blockquote With multiple lines And some "),
+            LeafNode("strong", "bold"),
+            LeafNode(None, " text")
+        ]
+        blockquote.children = [p_in_blockquote]
 
-        pre = HTMLNode("pre", None)
-        code = HTMLNode("code", None)
+        pre = ParentNode("pre", None)
+        code = ParentNode("code", None)
         code.children = [
             LeafNode(None, "def hello_world():\n    print(\"Hello!\")")
         ]
         pre.children = [code]
 
-        h3 = HTMLNode("h3", None)
+        h3 = ParentNode("h3", None)
         h3.children = [
             LeafNode(None, "Final Heading")
         ]
 
-        p4 = HTMLNode("p", None)
+        p4 = ParentNode("p", None)
         p4.children = [
             LeafNode(None, "Last paragraph with "),
             LeafNode("strong", "bold italic"),

@@ -2,28 +2,30 @@ from htmlnode import HTMLNode
 from leafnode import LeafNode
 
 class ParentNode (HTMLNode):
-    def __init__(self, tag, children, props=None):
-        super().__init__(tag, None, children, props)
+    def __init__(self, tag=None, children=None, props=None):
+        self.tag = tag
+        self.children = children or []
+        self.props = props
 
     def to_html(self):
-        # Tests for invalid input.
-        if not self.children:
-            raise ValueError("No children")
-        for child in self.children:
-            if not isinstance(child, (ParentNode, LeafNode)):
-                raise TypeError(f"Invalid child node: {child}")
         if not self.tag:
             raise ValueError("Missing tag")
+        if not self.children:
+            raise ValueError("No children")
         
-        # Generates HTML for all children with their own methods.
-        children_list = [node.to_html() for node in self.children]
+        children_html = [child.to_html() for child in self.children]
         
-        return f"<{self.tag}{self.props.props_to_html()}>{"".join(children_list)}</{self.tag}>"
+        # Create properties string if props exist
+        props_html = ""
+        if self.props:
+            for key, value in self.props.items():
+                props_html += f' {key}="{value}"'
+        
+        return f"<{self.tag}{props_html}>{''.join(children_html)}</{self.tag}>"
     
     def __repr__(self):
-        children_repr = ", ".join(repr(child) for child in self.children)
         if self.props is None:
-            return f"ParentNode(tag={self.tag!r}, children=[{children_repr}])"
+            return f"ParentNode(tag={self.tag!r}, children={self.children!r})"
         else:
-            return f"ParentNode(tag={self.tag!r}, children=[{children_repr}], props={self.props})"
+            return f"ParentNode(tag={self.tag!r}, children={self.children!r}, props={self.props!r})"
            

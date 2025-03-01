@@ -1,6 +1,7 @@
 import re
 from textnode import TextNode, TextType
 from htmlnode import HTMLNode
+from parentnode import ParentNode
 from leafnode import LeafNode
 
 def text_node_to_html_node(text_node):
@@ -380,12 +381,12 @@ def markdown_to_html_node(markdown):
         return items
 
     blocks = markdown_to_blocks(markdown)
-    div = HTMLNode("div", None) # Creates the main container node.
+    div = ParentNode("div", None) # Creates the main container node.
     nodes = []
 
     for block in blocks:
         if block_to_block_type(block) == "code": # Wraps blocks in nested nodes and removes the first and last lines.
-            outer_node = HTMLNode('pre', None)
+            outer_node = ParentNode('pre', None)
             lines = block.split("\n")
             if len(lines) < 3:  # Needs at least opening, content, and closing lines.
                 raise ValueError("Invalid code block")
@@ -393,7 +394,7 @@ def markdown_to_html_node(markdown):
                 lines = lines[1:]
             if lines and lines[-1].strip() == "```": # Removes the closing line with backticks.
                 lines = lines[:-1]
-            inner_node = HTMLNode("code", None)
+            inner_node = ParentNode("code", None)
             inner_node.children = [LeafNode(None, "\n".join(lines))]
             outer_node.children = [inner_node]
             nodes.append(outer_node)
@@ -401,21 +402,21 @@ def markdown_to_html_node(markdown):
         elif block_to_block_type(block) == "heading": # Wraps heading blocks in the right node type and processes the text further.
             count = len(block) - len(block.lstrip('#'))
             lines = block.split("\n", maxsplit = 1)
-            outer_node = HTMLNode(f'h{count}', None)
+            outer_node = ParentNode(f'h{count}', None)
             text_node = text_to_textnodes(lines[0].lstrip('#').strip())
             inner_node = [text_node_to_html_node(node) for node in text_node]
             outer_node.children = inner_node
             nodes.append(outer_node)
             if len(lines) > 1: # Appends the remaining text as a paragraph.
-                paragraph_outer_node = HTMLNode(f'p', None)
+                paragraph_outer_node = ParentNode(f'p', None)
                 text_nodes = text_to_textnodes(lines[1])
                 paragraph_inner_nodes = [text_node_to_html_node(node) for node in text_nodes]
                 paragraph_outer_node.children = paragraph_inner_nodes
                 nodes.append(paragraph_outer_node)
 
         elif block_to_block_type(block) == "quote": # Wraps quote blocks in a parent node, strips '>' from the beginning of lines and processes the text further.
-            outer_node = HTMLNode('blockquote', None)
-            paragraph_node = HTMLNode(f'p', None)
+            outer_node = ParentNode('blockquote', None)
+            paragraph_node = ParentNode(f'p', None)
             lines = block.split("\n")
             stripped_lines = [line.lstrip('>').strip() for line in lines]
             text_nodes = text_to_textnodes(" ".join(stripped_lines))
@@ -425,11 +426,11 @@ def markdown_to_html_node(markdown):
             nodes.append(outer_node)
 
         elif block_to_block_type(block) == "unordered_list": # Wraps unordered lists in a parent node, strips '* ' or '- ' from the beginning of lines and wraps them in 'li' nodes before processing them furter.
-            outer_node = HTMLNode('ul', None)
+            outer_node = ParentNode('ul', None)
             items = process_list_items(block, ordered=False)
             li_nodes = []
             for item in items:
-                li_node = HTMLNode('li', None)
+                li_node = ParentNode('li', None)
                 text_nodes = text_to_textnodes(item)
                 inner_nodes = [text_node_to_html_node(node) for node in text_nodes]
                 li_node.children = inner_nodes
@@ -438,11 +439,11 @@ def markdown_to_html_node(markdown):
             nodes.append(outer_node)
 
         elif block_to_block_type(block) == "ordered_list": # Wraps ordered lists in a parent node, strips numbers and periods from the beginning of lines and wraps them in 'li' nodes before processing them furter.
-            outer_node = HTMLNode('ol', None)
+            outer_node = ParentNode('ol', None)
             items = process_list_items(block, ordered=True)
             li_nodes = []
             for item in items:
-                li_node = HTMLNode('li', None)
+                li_node = ParentNode('li', None)
                 text_nodes = text_to_textnodes(item)
                 inner_nodes = [text_node_to_html_node(node) for node in text_nodes]
                 li_node.children = inner_nodes
@@ -451,7 +452,7 @@ def markdown_to_html_node(markdown):
             nodes.append(outer_node)
 
         elif block_to_block_type(block) == "paragraph": # Wraps paragraph blocks in a parent node type and processes the text further.
-            outer_node = HTMLNode(f'p', None)
+            outer_node = ParentNode(f'p', None)
             text_nodes = text_to_textnodes(block)
             inner_nodes = [text_node_to_html_node(node) for node in text_nodes]
             outer_node.children = inner_nodes
