@@ -1,4 +1,6 @@
 import re
+import shutil
+import os
 from textnode import TextNode, TextType
 from htmlnode import HTMLNode
 from parentnode import ParentNode
@@ -464,11 +466,43 @@ def markdown_to_html_node(markdown):
     div.children = nodes
     return div
 
+def copy_dir_contents(source, destination):
+    source = os.path.normpath(source)
+    destination = os.path.normpath(destination)
+    if os.path.exists(destination):
+        shutil.rmtree(destination)
+        os.mkdir(destination)
+        print("Destination folder cleaned and recreated")
+    else:
+        os.mkdir(destination)
+        print("Destination folder created")
 
+    if not os.path.exists(source):
+        raise Exception(f"Invalid source path: {source}")
+    
+    contents = os.listdir(path=source)
+    if not contents:
+        print(f"No files or subdirectories to copy: {source}")
+    else:
+        for item in contents:
+            source_item = os.path.join(source, item)
+            dest_item = os.path.join(destination, item)
+            if os.path.isfile(source_item):
+                try:
+                    shutil.copy(source_item, dest_item)
+                    print(f"File copied: {source_item}")
+                except Exception as e:
+                    print(f"Error copying file {source_item}: {e}")
+            else:
+                try:
+                    os.mkdir(dest_item)
+                    print(f"Directory created: {dest_item}")
+                    copy_dir_contents(source_item, dest_item)
+                except Exception as e:
+                    print(f"Error creating directory {dest_item}: {e}")
 
 def main():
-    Dummy = TextNode("This is a text node", "bold", "https://www.boot.dev")
-    print(Dummy)
+    copy_dir_contents("static", "public")
 
 if __name__ == "__main__":
     main()
