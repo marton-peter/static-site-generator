@@ -268,8 +268,8 @@ def markdown_to_blocks(markdown):
         for i, line in enumerate(lines):
             line = line.strip()
 
-            if line.startswith("*") or \
-                line.startswith("-") or \
+            if line.startswith("* ") or \
+                line.startswith("- ") or \
                 line.startswith(">") or \
                 line.startswith("#") or \
                 line.startswith("```") or \
@@ -279,6 +279,11 @@ def markdown_to_blocks(markdown):
                     paragraph_lines = []  # Resets for the next block.
 
                 remaining_text = "\n".join(lines[i:]).strip()
+                print(f"Parsing line: {line}")
+                print(f"Remaining input: {remaining_text[:30]}...")
+                if remaining_text == markdown:
+                    print(f"Unexpected stalling input: '{remaining_text[:30]}...'")
+                    raise ValueError("Unable to process remaining markdown.")
                 if remaining_text: # Recurse for remaining lines from the current marker onward.
                     remaining_blocks = markdown_to_blocks(remaining_text)
                     if remaining_blocks:  # Ensures `remaining_blocks` is not None.
@@ -533,6 +538,10 @@ def generate_page(source_path, template_path, dest_path):
 def main():
     copy_dir_contents("static", "public")
     generate_page("content/index.md", "template.html", "public/index.html")
+    generate_page("content/blog/glorfindel/index.md", "template.html", "public/blog/glorfindel/index.html")
+    generate_page("content/blog/tom/index.md", "template.html", "public/blog/tom/index.html")
+    generate_page("content/blog/majesty/index.md", "template.html", "public/blog/majesty/index.html")
+    generate_page("content/contact/index.md", "template.html", "public/contact/index.html")
 
 if __name__ == "__main__":
     main()
