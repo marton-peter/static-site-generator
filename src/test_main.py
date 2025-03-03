@@ -8,7 +8,8 @@ from main import text_node_to_html_node, \
     text_to_textnodes, \
     markdown_to_blocks, \
     block_to_block_type, \
-    markdown_to_html_node
+    markdown_to_html_node, \
+    extract_title
 from textnode import TextNode, TextType
 from parentnode import ParentNode
 from leafnode import LeafNode
@@ -575,3 +576,35 @@ Last paragraph with **bold italic** text."""
             print("Test 5 failed: Should have raised ValueError")
         except ValueError:
             print("Test 5 passed: Correctly raised ValueError for empty code block")
+
+    def test_extract_title(self):
+        markdown = """# Main Title
+
+This is a *paragraph* with **bold** and *italic* text.
+
+## Secondary Heading
+
+Here's a list:
+* First item with **bold**
+* Second item with *italic*
+* Third item with `code`
+
+Here's a numbered list:
+1. First numbered with *emphasis*
+2. Second numbered with **strong**
+3. Third numbered with `code`
+
+> This is a blockquote
+> With multiple lines
+> And some **bold** text
+
+```python
+def hello_world():
+    print("Hello!")
+```
+        
+### Final Heading
+Last paragraph with **bold italic** text."""
+    
+        expected = "Main Title"
+        assert extract_title(markdown) == expected

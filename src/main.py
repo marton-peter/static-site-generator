@@ -10,9 +10,9 @@ def text_node_to_html_node(text_node):
     if text_node.text_type is TextType.NORMAL:
         return LeafNode(None, text_node.text)
     if text_node.text_type is TextType.BOLD:
-        return LeafNode("strong", text_node.text)
+        return LeafNode("b", text_node.text)
     if text_node.text_type is TextType.ITALIC:
-        return LeafNode("em", text_node.text)
+        return LeafNode("i", text_node.text)
     if text_node.text_type is TextType.CODE:
         return LeafNode("code", text_node.text)
     if text_node.text_type is TextType.LINK:
@@ -25,15 +25,18 @@ def text_node_to_html_node(text_node):
 def split_nodes_delimiter(old_nodes):
     split_nodes = []
     delimiters = sorted(
-        {TextType.BOLD: "**", TextType.ITALIC: "*", TextType.CODE: "`"}.items(),
+        {TextType.BOLD: "**", TextType.ITALIC: "*", TextType.ITALIC: "_", TextType.CODE: "`"}.items(),
         key=lambda x: len(x[1]),
         reverse=True
     )
 
-    def find_matching_delimiter(text, delimiter, start_pos): # Finds the matching closing delimiter that isn't part of a larger delimiter
+    def find_matching_delimiter(text, delimiter, start_pos): # Finds the matching closing delimiter that isn't part of a larger delimiter.
         curr_pos = start_pos + len(delimiter)
         while curr_pos < len(text):
-            if delimiter == "*" and text.startswith("**", curr_pos): # If delimiter is "*" and we find "**", skip it
+            if delimiter == "*" and text.startswith("**", curr_pos): # If delimiter is "*" and we find "**", skip it.
+                curr_pos += 2
+                continue
+            if delimiter == "_" and text.startswith("__", curr_pos):  # Skips double underscores if using single.
                 curr_pos += 2
                 continue
             if text.startswith(delimiter, curr_pos): # If we find our delimiter
@@ -418,13 +421,12 @@ def markdown_to_html_node(markdown):
 
         elif block_to_block_type(block) == "quote": # Wraps quote blocks in a parent node, strips '>' from the beginning of lines and processes the text further.
             outer_node = ParentNode('blockquote', None)
-            paragraph_node = ParentNode(f'p', None)
             lines = block.split("\n")
             stripped_lines = [line.lstrip('>').strip() for line in lines]
-            text_nodes = text_to_textnodes(" ".join(stripped_lines))
-            inner_nodes = [text_node_to_html_node(node) for node in text_nodes]
-            outer_node.children = [paragraph_node]
-            paragraph_node.children = inner_nodes
+            text = " ".join(stripped_lines)
+            text = re.sub(r'\s+', ' ', text)
+            text_node = LeafNode(None, text)
+            outer_node.children = [text_node]
             nodes.append(outer_node)
 
         elif block_to_block_type(block) == "unordered_list": # Wraps unordered lists in a parent node, strips '* ' or '- ' from the beginning of lines and wraps them in 'li' nodes before processing them furter.
@@ -466,27 +468,27 @@ def markdown_to_html_node(markdown):
     div.children = nodes
     return div
 
-def copy_dir_contents(source, destination):
-    source = os.path.normpath(source)
-    destination = os.path.normpath(destination)
-    if os.path.exists(destination):
-        shutil.rmtree(destination)
-        os.mkdir(destination)
+def copy_dir_contents(source_path, dest_path):
+    source_path = os.path.normpath(source_path)
+    dest_path = os.path.normpath(dest_path)
+    if os.path.exists(dest_path):
+        shutil.rmtree(dest_path)
+        os.mkdir(dest_path)
         print("Destination folder cleaned and recreated")
     else:
-        os.mkdir(destination)
+        os.mkdir(dest_path)
         print("Destination folder created")
 
-    if not os.path.exists(source):
-        raise Exception(f"Invalid source path: {source}")
+    if not os.path.exists(source_path):
+        raise Exception(f"Invalid source path: {source_path}")
     
-    contents = os.listdir(path=source)
+    contents = os.listdir(path=source_path)
     if not contents:
-        print(f"No files or subdirectories to copy: {source}")
+        print(f"No files or subdirectories to copy: {source_path}")
     else:
         for item in contents:
-            source_item = os.path.join(source, item)
-            dest_item = os.path.join(destination, item)
+            source_item = os.path.join(source_path, item)
+            dest_item = os.path.join(dest_path, item)
             if os.path.isfile(source_item):
                 try:
                     shutil.copy(source_item, dest_item)
@@ -501,8 +503,36 @@ def copy_dir_contents(source, destination):
                 except Exception as e:
                     print(f"Error creating directory {dest_item}: {e}")
 
+def extract_title(markdown):
+    stripped = markdown.strip()
+    if stripped == "": # Handles empty or whitespace-only input.
+        raise ValueError("Empty input string")
+    lines = stripped.split("\n")
+    for line in lines:
+        if line.startswith("# "):
+            return line[2:].strip()
+    raise ValueError("No h1 header found")
+
+def generate_page(source_path, template_path, dest_path):
+    print(f"Generating page from {source_path} to {dest_path} using {template_path}")
+    with open(source_path) as f:
+        markdown = f.read()
+    with open(template_path) as f:
+        template = f.read()
+    html_str = markdown_to_html_node(markdown).to_html()
+    title = extract_title(markdown)
+    template = template.replace("{{ Title }}", title)
+    template = template.replace("{{ Content }}", html_str)
+    dest_dir = os.path.dirname(dest_path)
+    os.makedirs(dest_dir, exist_ok=True)
+    print("Destination directory created: ", dest_dir)
+    with open(dest_path, 'w') as f:
+        f.write(template)
+    
+
 def main():
     copy_dir_contents("static", "public")
+    generate_page("content/index.md", "template.html", "public/index.html")
 
 if __name__ == "__main__":
     main()
