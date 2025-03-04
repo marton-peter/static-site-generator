@@ -1,8 +1,8 @@
 import re
 import shutil
 import os
+import sys
 from textnode import TextNode, TextType
-from htmlnode import HTMLNode
 from parentnode import ParentNode
 from leafnode import LeafNode
 
@@ -279,8 +279,6 @@ def markdown_to_blocks(markdown):
                     paragraph_lines = []  # Resets for the next block.
 
                 remaining_text = "\n".join(lines[i:]).strip()
-                print(f"Parsing line: {line}")
-                print(f"Remaining input: {remaining_text[:30]}...")
                 if remaining_text == markdown:
                     print(f"Unexpected stalling input: '{remaining_text[:30]}...'")
                     raise ValueError("Unable to process remaining markdown.")
@@ -518,7 +516,7 @@ def extract_title(markdown):
             return line[2:].strip()
     raise ValueError("No h1 header found")
 
-def generate_page(source_path, template_path, dest_path):
+def generate_page(source_path, template_path, dest_path, basepath):
     print(f"Generating page from {source_path} to {dest_path} using {template_path}")
     with open(source_path) as f:
         markdown = f.read()
@@ -528,20 +526,50 @@ def generate_page(source_path, template_path, dest_path):
     title = extract_title(markdown)
     template = template.replace("{{ Title }}", title)
     template = template.replace("{{ Content }}", html_str)
+    template = template.replace('href="/', f'href="{basepath}')
+    template = template.replace('src="/', f'src="{basepath}')
     dest_dir = os.path.dirname(dest_path)
     os.makedirs(dest_dir, exist_ok=True)
     print("Destination directory created: ", dest_dir)
     with open(dest_path, 'w') as f:
         f.write(template)
+
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
+    dir_path_content = os.path.normpath(dir_path_content)
+    template_path = os.path.normpath(template_path)
+    dest_dir_path = os.path.normpath(dest_dir_path)
+    
+    if not os.path.exists(dir_path_content):
+        raise Exception(f"Invalid content path: {dir_path_content}")
+    
+    contents = os.listdir(path=dir_path_content)
+    if not contents:
+        print(f"No files or subdirectories in content directory: {dir_path_content}")
+    else:
+        for item in contents:
+            content_item = os.path.join(dir_path_content, item)
+            dest_item = os.path.join(dest_dir_path, item)
+            if os.path.isfile(content_item) and content_item[-3:] == ".md":
+                try:
+                    generate_page(content_item, template_path, os.path.join(dest_dir_path, "index.html"), basepath)
+                except Exception as e:
+                    print(f"Could not generate page from {content_item}: {e}")
+            elif os.path.isdir(content_item):
+                try:
+                    os.makedirs(dest_item, exist_ok=True)
+                    print(f"Directory ensured: {dest_item}")
+                    generate_pages_recursive(content_item, template_path, dest_item, basepath)
+                except Exception as e:
+                    print(f"Error creating directory {dest_item}: {e}")
     
 
 def main():
-    copy_dir_contents("static", "public")
-    generate_page("content/index.md", "template.html", "public/index.html")
-    generate_page("content/blog/glorfindel/index.md", "template.html", "public/blog/glorfindel/index.html")
-    generate_page("content/blog/tom/index.md", "template.html", "public/blog/tom/index.html")
-    generate_page("content/blog/majesty/index.md", "template.html", "public/blog/majesty/index.html")
-    generate_page("content/contact/index.md", "template.html", "public/contact/index.html")
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
+    else:
+        basepath = "/"
+    copy_dir_contents("static", "docs")
+    generate_pages_recursive("content", "template.html", "docs", basepath)
 
 if __name__ == "__main__":
     main()
