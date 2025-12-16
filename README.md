@@ -1,1 +1,1 @@
-<h1 align="center">Static Site Generator</h1>
+<h1 align="center">Static Site Generator</h1> # main header
