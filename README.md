@@ -125,6 +125,8 @@ By setting `ENABLE_DOCKER_INTEGRATION_TESTS=TRUE` during `go test -v ./...`, the
 
 See [integration_test.go](integration_test.go).
 
+## Usage
+
 ## 💬 Contact
 
 [![Twitter Follow](https://img.shields.io/twitter/follow/wagslane.svg?label=Follow%20Wagslane&style=social)](https://twitter.com/intent/follow?screen_name=wagslane)
